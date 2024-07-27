@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -63,6 +66,8 @@ func todoHandlers() http.Handler {
 }
 
 func main() {
+	stopChan := make(chan os.Signal)
+	signal.Notify(stopChan, os.Interrupt)
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -83,4 +88,12 @@ func main() {
 			log.Printf("Listne : %s \n", err)
 		}
 	}()
+
+	<- stopChan
+	log.Println("Shutting down server")
+	ctx, cancel := context.WithTimeout(context.Background(),5*time.Second)
+	srv.Shutdown(ctx)
+	defer cancel(
+		log.Println("Server stopped")
+	)
 }

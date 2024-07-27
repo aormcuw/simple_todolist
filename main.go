@@ -4,6 +4,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/thedevsaddam/renderer"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -46,4 +48,12 @@ func checkErr(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func main() {
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+
+	r.Get("/", homeHandler)
+	r.Mount("/todo", todoHandlers())
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -48,6 +49,17 @@ func checkErr(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func todoHandlers() http.Handler {
+	rg := chi.NewRouter()
+	rg.Group(func(r chi.Router) {
+		r.Get("/", fetchTodos)
+		r.Post("/", createTodo)
+		r.Put("/{id}", updateTodo)
+		r.Delete("/{id}", deleteTodo)
+	})
+	return rg
 }
 
 func main() {

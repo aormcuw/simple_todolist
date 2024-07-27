@@ -68,4 +68,19 @@ func main() {
 
 	r.Get("/", homeHandler)
 	r.Mount("/todo", todoHandlers())
+
+	srv := &http.Server{
+		Addr:         port,
+		Handler:      r,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	go func() {
+		log.Println("listening on port ", port)
+		if err := srv.ListenAndServe(); err != nil {
+			log.Printf("Listne : %s \n", err)
+		}
+	}()
 }

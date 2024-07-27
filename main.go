@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -96,6 +97,42 @@ func fetchTodos(w http.ResponseWriter, r *http.Request) {
 		"data": todoList,
 	})
 }
+
+func createTodo(w http.ResponseWriter, r *http.Request){
+	var t todo
+
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		rnd.JSON(w, http.StatusProcessing, err)
+		return
+	}
+
+	if t.Title == ""{
+		rnd.JSON(w, http.StatusBadRequest, renderer.M{
+			"message":"The title is required",
+		})
+		return
+	}
+
+	tm := todoModel{
+		ID: bson.NewObjectId(),
+		Title: t.Title,
+		Completed: false,
+		CreatedAt: time.Now(),
+	}
+
+	if err := db.C(collectionName).Insert(tm); err != nil{
+		rnd.JSON(w, http.StatusProcessing, renderer.M{
+			"message":"Failed to save todo",
+			"error":err,
+		})
+		return
+	}
+	rnd.JSON(w, http.StatusCreated, renderer.M{
+		"message":"Todo created succesfully",
+		"todo_id": tm.ID.Hex(),
+	})
+}
+
 
 func main() {
 	stopChan := make(chan os.Signal)

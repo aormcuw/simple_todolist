@@ -33,10 +33,10 @@ type (
 		CreatedAt time.Time     `bson:"createAt"`
 	}
 	todo struct {
-		ID        bson.ObjectId `bson:"id"`
-		Title     string        `bson:"title"`
-		Completed string        `bson:"compeleted"`
-		CreatedAt time.Time     `bson:"create_at"`
+		ID        bson.ObjectId `json:"id"`
+		Title     string        `json:"title"`
+		Completed string        `json:"compeleted"`
+		CreatedAt time.Time     `json:"create_at"`
 	}
 )
 
@@ -68,6 +68,33 @@ func todoHandlers() http.Handler {
 func homeHandler(w http.ResponseWriter, r *http.Request){
 	err := rnd.Template(w, http.StatusOK, []string{"static/home.tpl"}, nil)
 	checkErr(err)
+}
+
+func fetchTodos(w http.ResponseWriter, r *http.Request) {
+	todos := []todoModel{}
+
+	if err := db.C(colelctionName).Find(bson.M{}).All(&todos); err != nil{
+		rnd.JSON(http.StatusProcessing, renderer.M{
+			"message":"Failed to fetch todo",
+			"error":err,
+		})
+		return
+
+	}
+
+	todoList := []todo{}
+
+	for _, t := range todos{
+		todoList = append(todoList, todo{
+			ID: t.ID.Hex(),
+			Title: t.Title,
+			Completed: t.Completed,
+			CreatedAt: t.CreatedAt,
+		})
+	}
+	rnd.JSON(w, http.StatusOK, renderer.M{
+		"data": todoList,
+	})
 }
 
 func main() {

@@ -67,7 +67,7 @@ func todoHandlers() http.Handler {
 	return rg
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request){
+func homeHandler(w http.ResponseWriter, r *http.Request) {
 	err := rnd.Template(w, http.StatusOK, []string{"static/home.tpl"}, nil)
 	checkErr(err)
 }
@@ -75,10 +75,10 @@ func homeHandler(w http.ResponseWriter, r *http.Request){
 func fetchTodos(w http.ResponseWriter, r *http.Request) {
 	todos := []todoModel{}
 
-	if err := db.C(colelctionName).Find(bson.M{}).All(&todos); err != nil{
+	if err := db.C(colelctionName).Find(bson.M{}).All(&todos); err != nil {
 		rnd.JSON(http.StatusProcessing, renderer.M{
-			"message":"Failed to fetch todo",
-			"error":err,
+			"message": "Failed to fetch todo",
+			"error":   err,
 		})
 		return
 
@@ -86,10 +86,10 @@ func fetchTodos(w http.ResponseWriter, r *http.Request) {
 
 	todoList := []todo{}
 
-	for _, t := range todos{
+	for _, t := range todos {
 		todoList = append(todoList, todo{
-			ID: t.ID.Hex(),
-			Title: t.Title,
+			ID:        t.ID.Hex(),
+			Title:     t.Title,
 			Completed: t.Completed,
 			CreatedAt: t.CreatedAt,
 		})
@@ -99,7 +99,7 @@ func fetchTodos(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func createTodo(w http.ResponseWriter, r *http.Request){
+func createTodo(w http.ResponseWriter, r *http.Request) {
 	var t todo
 
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
@@ -107,55 +107,93 @@ func createTodo(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	if t.Title == ""{
+	if t.Title == "" {
 		rnd.JSON(w, http.StatusBadRequest, renderer.M{
-			"message":"The title is required",
+			"message": "The title is required",
 		})
 		return
 	}
 
 	tm := todoModel{
-		ID: bson.NewObjectId(),
-		Title: t.Title,
+		ID:        bson.NewObjectId(),
+		Title:     t.Title,
 		Completed: false,
 		CreatedAt: time.Now(),
 	}
 
-	if err := db.C(colectionName).Insert(tm); err != nil{
+	if err := db.C(colectionName).Insert(tm); err != nil {
 		rnd.JSON(w, http.StatusProcessing, renderer.M{
-			"message":"Failed to save todo",
-			"error":err,
+			"message": "Failed to save todo",
+			"error":   err,
 		})
 		return
 	}
 	rnd.JSON(w, http.StatusCreated, renderer.M{
-		"message":"Todo created succesfully",
+		"message": "Todo created succesfully",
 		"todo_id": tm.ID.Hex(),
 	})
 }
 
-func deleteTodo(w http.ResponseWriter, r *http.Request){
+func deleteTodo(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimSpace(chi.URLParam(r, "id"))
 
-	if !bson.IsObjectIdHex(id){
+	if !bson.IsObjectIdHex(id) {
 		rnd.JSON(w, http.StatusBadRequest, renderer.M{
-			"message":"The id is invalid",
+			"message": "ID is invalid",
 		})
 		return
 	}
 
-	if err := db.C(colelctionName).RemoveId(bson.ObjectIdHex(id)); err !=  nil{
+	if err := db.C(colelctionName).RemoveId(bson.ObjectIdHex(id)); err != nil {
 		rnd.JSON(w, http.StatusProcessing, renderer.M{
-			"message":"Failed to delete todo",
-			"error":err,
+			"message": "Failed to delete todo",
+			"error":   err,
 		})
 		return
 	}
 
 	rnd.JSON(w, http.StatusOK, renderer.M{
-		"message":"Todo deleted successfully",
+		"message": "Todo deleted successfully",
 	})
 
+}
+
+func updateTodo(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSpace(chi.URLParam(r, "id"))
+
+	if !bson.IsObjectIdHex(id) {
+		rnd.JSON(w, http.StatusBadRequest, renderer.M{
+			"message": "ID is invalid",
+			"error", err,
+		})
+		return
+	}
+
+	var t todo
+
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		rnd.JSON(w, http.StatusProcessing, err)
+		return
+	}
+
+	if t.Title == "" {
+		rnd.JSON(w, http.StatusBadRequest, renderer.M{
+			"message": "The title field is required",
+		})
+		return
+	}
+
+	if err := db.C(colelctionName).
+		Update(
+			bson.M{"_id": bson.ObjectIdHex(id)},
+			bson.M{"title": t.Title, "completed": t.Completed},
+		); err != nil {
+		rnd.JSON(w, http.StatusProcessing, renderer.M{
+			"message": "Failed to update todo",
+			"error":   err,
+		})
+		return
+	}
 }
 
 func main() {
@@ -182,11 +220,10 @@ func main() {
 		}
 	}()
 
-	<- stopChan
+	<-stopChan
 	log.Println("Shutting down server")
-	ctx, cancel := context.WithTimeout(context.Background(),5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	srv.Shutdown(ctx)
-	defer cancel(
-		log.Println("Server stopped")
-	)
+	defer cancel()
+	log.Println("Server stopped")
 }

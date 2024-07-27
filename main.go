@@ -21,10 +21,10 @@ var rnd *renderer.Render
 var db *mgo.Database
 
 const (
-	hostName       string = "localhost:27017"
-	dbName         string = "demo_todo"
-	colelctionName string = "todo"
-	port           string = ":9000"
+	hostName      string = "localhost:27017"
+	dbName        string = "demo_todo"
+	colectionName string = "todo"
+	port          string = ":9000"
 )
 
 type (
@@ -35,10 +35,10 @@ type (
 		CreatedAt time.Time     `bson:"createAt"`
 	}
 	todo struct {
-		ID        bson.ObjectId `json:"id"`
-		Title     string        `json:"title"`
-		Completed string        `json:"compeleted"`
-		CreatedAt time.Time     `json:"create_at"`
+		ID        string    `json:"id"`
+		Title     string    `json:"title"`
+		Completed bool      `json:"compeleted"`
+		CreatedAt time.Time `json:"create_at"`
 	}
 )
 
@@ -75,8 +75,8 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 func fetchTodos(w http.ResponseWriter, r *http.Request) {
 	todos := []todoModel{}
 
-	if err := db.C(colelctionName).Find(bson.M{}).All(&todos); err != nil {
-		rnd.JSON(http.StatusProcessing, renderer.M{
+	if err := db.C(colectionName).Find(bson.M{}).All(&todos); err != nil {
+		rnd.JSON(w, http.StatusProcessing, renderer.M{
 			"message": "Failed to fetch todo",
 			"error":   err,
 		})
@@ -144,7 +144,7 @@ func deleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.C(colelctionName).RemoveId(bson.ObjectIdHex(id)); err != nil {
+	if err := db.C(colectionName).RemoveId(bson.ObjectIdHex(id)); err != nil {
 		rnd.JSON(w, http.StatusProcessing, renderer.M{
 			"message": "Failed to delete todo",
 			"error":   err,
@@ -164,7 +164,6 @@ func updateTodo(w http.ResponseWriter, r *http.Request) {
 	if !bson.IsObjectIdHex(id) {
 		rnd.JSON(w, http.StatusBadRequest, renderer.M{
 			"message": "ID is invalid",
-			"error", err,
 		})
 		return
 	}
@@ -183,7 +182,7 @@ func updateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.C(colelctionName).
+	if err := db.C(colectionName).
 		Update(
 			bson.M{"_id": bson.ObjectIdHex(id)},
 			bson.M{"title": t.Title, "completed": t.Completed},
